@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "entry": "./lib/webparts/glAccountsForm/GlAccountsFormWebPart.js",
+      "manifest": "./src/webparts/glAccountsForm/GlAccountsFormWebPart.manifest.json",
+      "outputPath": "./dist/gl-accounts-form-web-part.js"
+    }
+  ],
+  "externals": {},
+  "localizedResources": {
+    "GlAccountsFormWebPartStrings": "webparts/glAccountsForm/loc/{locale}.js"
+  }
+}

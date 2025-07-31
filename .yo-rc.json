@@ -1,0 +1,8 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "version": "1.4.1",
+    "libraryName": "g-lforms",
+    "libraryId": "35dd4bb6-b193-4879-937c-a9a7a85938b1",
+    "environment": "onprem"
+  }
+}
