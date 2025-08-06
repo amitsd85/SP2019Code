@@ -1,0 +1,153 @@
+import * as React from 'react';
+import { TextField, PrimaryButton, IDropdownOption, Spinner } from '@fluentui/react';
+import { DropdownField } from './DropdownField';
+import { TextFieldCP } from './TextFieldCP';
+import { SPService } from '../../service/SPService';
+
+const listName = 'SubmittedForms';
+const listForDropdowns = ['Projects', 'Departments', 'Clients'];
+const listsForValidation = ['ValidNumbers1', 'ValidNumbers2', 'ValidNumbers3'];
+
+export class FormWebPart extends React.Component<{}, any> {
+  private spService: SPService;
+
+  constructor(props: {}) {
+    super(props);
+    this.spService = new SPService();
+
+    this.state = {
+      searchId: '',
+      loading: false,
+      itemId: null,
+      dropdowns: {},
+      dropdownOptions: {},
+      textFields: {},
+      errors: {}
+    };
+  }
+
+  componentDidMount() {
+    listForDropdowns.forEach(async (list) => {
+      const options = await this.spService.getDropdownOptions(list);
+      this.setState((prevState: any) => ({
+        dropdownOptions: { ...prevState.dropdownOptions, [list]: options }
+      }));
+    });
+  }
+
+  handleSearch = async () => {
+    if (!this.state.searchId) return;
+
+    this.setState({ loading: true });
+    const item = await this.spService.getItemById(listName, this.state.searchId);
+    this.setState({ loading: false });
+
+    if (!item) {
+      alert('Item not found');
+      return;
+    }
+
+    this.setState({
+      itemId: item.ID,
+      dropdowns: {
+        Projects: item.Projects || null,
+        Departments: item.Departments || null,
+        Clients: item.Clients || null
+      },
+      textFields: {
+        Field1: item.Field1?.toString() || '',
+        Field2: item.Field2?.toString() || '',
+        Field3: item.Field3?.toString() || ''
+      }
+    });
+  };
+
+  handleDropdownChange = (list: string, option: IDropdownOption) => {
+    this.setState((prevState: any) => ({
+      dropdowns: { ...prevState.dropdowns, [list]: option.key as string }
+    }));
+  };
+
+  handleTextFieldChange = (key: string, value: string) => {
+    this.setState((prevState: any) => ({
+      textFields: { ...prevState.textFields, [key]: value }
+    }));
+  };
+
+  validateAndSave = async () => {
+    let hasError = false;
+    const newErrors: any = {};
+
+    for (const key in this.state.textFields) {
+      const value = this.state.textFields[key];
+      if (!/^\d{4}$/.test(value)) {
+        newErrors[key] = 'Enter a 4-digit number';
+        hasError = true;
+      } else {
+        const isValid = await this.spService.validateNumberAcrossLists(listsForValidation, value);
+        if (!isValid) {
+          newErrors[key] = 'Invalid or inactive number';
+          hasError = true;
+        }
+      }
+    }
+
+    this.setState({ errors: newErrors });
+    if (hasError) return;
+
+    const payload = {
+      Title: this.state.searchId || 'New Form Entry',
+      Projects: this.state.dropdowns['Projects'],
+      Departments: this.state.dropdowns['Departments'],
+      Clients: this.state.dropdowns['Clients'],
+      Field1: this.state.textFields['Field1'],
+      Field2: this.state.textFields['Field2'],
+      Field3: this.state.textFields['Field3']
+    };
+
+    if (this.state.itemId) {
+      await this.spService.updateItem(listName, this.state.itemId.toString(), payload);
+      alert('Item updated successfully!');
+    } else {
+      await this.spService.saveFormData(listName, payload);
+      alert('New item created!');
+    }
+  };
+
+  render(): React.ReactNode {
+    return (
+      <div>
+        <TextField
+          label="Enter ID to Search"
+          value={this.state.searchId}
+          onChange={(_, val) => this.setState({ searchId: val || '' })}
+        />
+        <PrimaryButton text="Search" onClick={this.handleSearch} disabled={!this.state.searchId} />
+
+        {this.state.loading && <Spinner label="Fetching data..." />}
+
+        {listForDropdowns.map(list => (
+          <DropdownField
+            key={list}
+            label={`Select ${list}`}
+            options={this.state.dropdownOptions[list] || []}
+            selectedKey={this.state.dropdowns[list] || null}
+            onChange={(opt) => this.handleDropdownChange(list, opt)}
+          />
+        ))}
+
+        {['Field1', 'Field2', 'Field3'].map(field => (
+          <TextFieldCP
+            key={field}
+            label={`Enter ${field}`}
+            value={this.state.textFields[field] || ''}
+            onChange={(val) => this.handleTextFieldChange(field, val)}
+            errorMessage={this.state.errors[field]}
+          />
+        ))}
+
+        <PrimaryButton text={this.state.itemId ? "Update" : "Save"} onClick={this.validateAndSave} />
+      </div>
+    );
+  }
+}

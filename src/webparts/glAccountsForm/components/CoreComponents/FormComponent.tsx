@@ -14,6 +14,7 @@ export interface FormComponentState {
     projectOptions: string[];
     teamOptions: string[];
     locationOptions: string[];
+    extra1Error: string;
 }
 
 export class FormComponent extends React.Component<{}, FormComponentState> {
@@ -29,7 +30,8 @@ export class FormComponent extends React.Component<{}, FormComponentState> {
             extra3: '',
             projectOptions: [],
             teamOptions: [],
-            locationOptions: []
+            locationOptions: [],
+            extra1Error: ''
         };
     }
 
@@ -66,26 +68,68 @@ export class FormComponent extends React.Component<{}, FormComponentState> {
         }
     };
 
+   
+
+    // handleSave = async () => {
+    //     const { formId, project, team, location, extra1, extra2, extra3 } = this.state;
+
+    //     if (formId.length !== 4) {
+    //         alert("Form ID must be 4 digits.");
+    //         return;
+    //     }
+
+    //     await SPService.saveForm({
+    //         FormID: formId,
+    //         Project: project,
+    //         Team: team,
+    //         Location: location,
+    //         ExtraField1: extra1,
+    //         ExtraField2: extra2,
+    //         ExtraField3: extra3
+    //     });
+
+    //     alert("Form saved successfully!");
+    // };
     handleSave = async () => {
         const { formId, project, team, location, extra1, extra2, extra3 } = this.state;
-
-        if (formId.length !== 4) {
-            alert("Form ID must be 4 digits.");
-            return;
+        const textFields = { formId, extra1, extra2, extra3 };
+        const listsForValidation = ['ValidationList1', 'ValidationList2']; // Replace with actual list names
+      
+        let hasError = false;
+        let newErrors: any = {};
+      
+        for (const key in textFields) {
+          const value = textFields[key];
+          if (!/^\d{4}$/.test(value)) {
+            newErrors[key] = 'Enter a 4-digit number';
+            hasError = true;
+          } else {
+            const isValid = await SPService.validateNumberAcrossLists(listsForValidation, value);
+            if (!isValid) {
+              newErrors[key] = 'Invalid or inactive number';
+              hasError = true;
+            }
+          }
         }
-
+      
+        this.setState((prevState) =>({ ...prevState,errors: newErrors }));
+      
+        if (hasError) return;
+      
+        // Save to SharePoint
         await SPService.saveForm({
-            FormID: formId,
-            Project: project,
-            Team: team,
-            Location: location,
-            ExtraField1: extra1,
-            ExtraField2: extra2,
-            ExtraField3: extra3
+          FormID: formId,
+          Project: project,
+          Team: team,
+          Location: location,
+          ExtraField1: extra1,
+          ExtraField2: extra2,
+          ExtraField3: extra3
         });
-
-        alert("Form saved successfully!");
-    };
+      
+        alert('Form saved successfully!');
+      };
+      
 
     render() {
         const {

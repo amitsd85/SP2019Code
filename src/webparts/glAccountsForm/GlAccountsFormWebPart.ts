@@ -10,7 +10,7 @@ import {
 import * as strings from 'GlAccountsFormWebPartStrings';
 import GlAccountsForm from './components/GlAccountsForm';
 import { IGlAccountsFormProps } from './components/IGlAccountsFormProps';
-import { sp } from '@pnp/sp';
+import sp from "sp-pnp-js";
 
 import { setup as pnpSetup } from "@pnp/common";
 
@@ -21,7 +21,7 @@ export interface IGlAccountsFormWebPartProps {
 export default class GlAccountsFormWebPart extends BaseClientSideWebPart<IGlAccountsFormWebPartProps> {
   
   public onInit(): Promise<void> {
-    pnpSetup({ spfxContext: this.context });
+    sp.setup({ spfxContext: this.context });
     return super.onInit();
   }
 
